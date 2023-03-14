@@ -1,0 +1,5 @@
+#!/bin/bash
+
+SCRIPT_PATH=$(dirname $(realpath "$0"))
+source $SCRIPT_PATH/env/bin/activate
+python3 $SCRIPT_PATH/yt.py $@
