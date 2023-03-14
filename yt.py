@@ -13,6 +13,7 @@ api_key = config.get('API_KEY')
 youtube = build('youtube', 'v3', developerKey=api_key)
 
 def exec(args, command, pageToken=None, depth=1, **kwargs):
+    kwargs = {k:v for k,v in kwargs.items() if v is not None}
     sys.stderr.write("Going through page {}\r".format(depth))
     request = getattr(youtube, command)().list(part=args.part, pageToken=pageToken, maxResults=args.maxResults, **kwargs)
     response = request.execute()
@@ -38,14 +39,15 @@ def extract(response, keys):
 channels = lambda args:exec(args, command='channels', id=args.channel_id)
 playlists = lambda args:exec(args, command='playlists', channelId=args.channel_id)
 playlistitems = lambda args:exec(args, command='playlistItems', playlistId=args.playlist_id)
-search = lambda args:exec(args, command='search', q=args.query, type=args.type)
+search = lambda args:exec(args, command='search', q=args.query, type=args.type, channelId=args.channel_id)
 
 parser = argparse.ArgumentParser(description="YouTube command line tool")
 
 subparsers = parser.add_subparsers(help='sub-command help')
 
 search_parser = subparsers.add_parser('search', aliases=['q'], help='search help')
-search_parser.add_argument('query', type=str, help='the query to search for')
+search_parser.add_argument('--query', type=str, help='the query to search for')
+search_parser.add_argument('--channel_id', type=str, help='the ID of the channel to fetch playlist for')
 search_parser.add_argument('--part', type=str, help='what to fetch(id,snippet,contentDetails,status,...)', default='id,snippet')
 search_parser.add_argument('--keys', type=str, nargs="*",default=['kind', 'videoId', 'channelId', 'publishedAt', 'title', 'description', ], help='what field to show')
 search_parser.add_argument('--type', type=str, default='channel', help='what kind to search(channel,playlist,video)')
