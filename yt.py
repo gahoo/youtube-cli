@@ -1,12 +1,13 @@
 from googleapiclient.discovery import build
 import json
+import os
 import argparse
 import yaml
 import sys
 import pdb
 
-
-with open("config.yaml", "r") as f:
+config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yaml")
+with open(config_file, "r") as f:
     config = yaml.safe_load(f)
 
 api_key = config.get('API_KEY')
