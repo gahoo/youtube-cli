@@ -1,0 +1,14 @@
+#!/bin/bash
+set -ex
+
+itag=${itag:-247}
+
+for url in $*
+do
+  video_id=$(echo $url|grep -Po 'v=([\w-]+)')
+  channel=$(yt videos --video_id cC77lJHUBMU --part snippet --key channelTitle)
+  mkdir -p "$channel"
+  pushd "$channel"
+  you-get --itag=$itag $url && echo $url >> downloaded
+  popd
+done
