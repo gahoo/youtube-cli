@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+itag=${itag:-247}
+
+for playlist_id in $*
+do
+  playlist_json=$(yt pl --playlist_id $playlist_id --output json)
+  channel=$(echo $playlist_json|jq -r '.[].channelTitle')
+  channel_id=$(echo $playlist_json|jq -r '.[].channelId')
+  playlist=$(echo $playlist_json|jq -r '.[].title')
+  maxResults=$(echo $playlist_json|jq -r '.[].itemCount')
+  mkdir -p "$channel/$playlist"
+  [ -f "$channel/channel.json" ] || yt c --channel_id $channel_id --output json > "$channel/channel.json"
+  pushd "$channel/$playlist"
+  [ -f "playlist.json" ] || echo $playlist_json > playlist.json
+  touch downloaded
+  
+  for url in $(yt pli --playlist_id $playlist_id --key videoId --maxResults $maxResults|sed 's#^#https://www.youtube.com/watch?v=#g'|sort -u|grep -v -f downloaded)
+  do
+    you-get --itag=$itag $url && echo $url >> downloaded || echo $url
+  done
+
+  popd
+done
