@@ -38,7 +38,7 @@ def extract(response, keys):
     return result
 
 channels = lambda args:exec(args, command='channels', id=args.channel_id)
-playlists = lambda args:exec(args, command='playlists', channelId=args.channel_id)
+playlists = lambda args:exec(args, command='playlists', channelId=args.channel_id, id=args.playlist_id)
 playlistitems = lambda args:exec(args, command='playlistItems', playlistId=args.playlist_id)
 search = lambda args:exec(args, command='search', q=args.query, type=args.type, channelId=args.channel_id)
 
@@ -56,9 +56,10 @@ search_parser.add_argument('--maxResults', type=int, help='How many results per 
 search_parser.set_defaults(func=search)
 
 playlists_parser = subparsers.add_parser('playlists', aliases=['pl'], help='playlist help')
+playlists_parser.add_argument('--playlist_id', type=str, help='the ID of the playlist to fetch')
 playlists_parser.add_argument('--channel_id', type=str, help='the ID of the channel to fetch playlist for')
 playlists_parser.add_argument('--part', type=str, help='what to fetch(id,snippet,contentDetails,status,...)', default='id,contentDetails,snippet')
-playlists_parser.add_argument('--keys', type=str, nargs="*",default=['title', 'description', 'publishedAt', 'itemCount', 'embedHtml'], help='what field to show')
+playlists_parser.add_argument('--keys', type=str, nargs="*",default=['channelId', 'channelTitle', 'title', 'description', 'publishedAt', 'itemCount', 'embedHtml'], help='what field to show')
 playlists_parser.add_argument('--maxResults', type=int, help='How many results per page', default=50)
 playlists_parser.set_defaults(func=playlists)
 
