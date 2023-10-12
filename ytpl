@@ -1,10 +1,19 @@
 #!/bin/bash
-set -e
+#set -e
 
 itag=${itag:-247}
 
+fetch_video(){
+  url=$1
+  you-get --itag=$itag $url && echo $url >> downloaded || echo $url
+}
+
+export -f fetch_video
+export itag
+
 for playlist_id in $*
 do
+  echo $playlist_id
   playlist_json=$(yt pl --playlist_id $playlist_id --output json)
   channel=$(echo $playlist_json|jq -r '.[].channelTitle')
   channel_id=$(echo $playlist_json|jq -r '.[].channelId')
@@ -16,10 +25,12 @@ do
   [ -f "playlist.json" ] || echo $playlist_json > playlist.json
   touch downloaded
   
-  for url in $(yt pli --playlist_id $playlist_id --key videoId --maxResults $maxResults|sed 's#^#https://www.youtube.com/watch?v=#g'|sort -u|grep -v -f downloaded)
-  do
-    you-get --itag=$itag $url && echo $url >> downloaded || echo $url
-  done
+#  for url in $(yt pli --playlist_id $playlist_id --key videoId --maxResults $maxResults|sed 's#^#https://www.youtube.com/watch?v=#g'|sort -u|grep -v -f downloaded)
+#  do
+#    you-get --itag=$itag $url && echo $url >> downloaded || echo $url
+#  done
+  urls="$(yt pli --playlist_id $playlist_id --key videoId --maxResults $maxResults|sed 's#^#https://www.youtube.com/watch?v=#g'|sort -u|grep -v -f downloaded)"
+  [ -z "$urls" ] || parallel -k -j 5 --retries 1 --lb fetch_video ::: $urls
 
   popd
 done
