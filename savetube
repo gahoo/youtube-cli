@@ -1,0 +1,39 @@
+#!/bin/bash
+#https://ytshorts.savetube.me/
+set -x
+
+quality=${quality:-720}
+base_url=${base_url:-https://cdn27.savetube.me/info}
+
+fetch_video(){
+  url=$1
+  video_id=$url
+  playlist=
+  channel=
+  playlist_id=
+
+  echo $url|grep "^http" && video_id=$(echo $url|grep -Po '(?<=v=)([\w-]+)') && playlist_id=$(echo $url|grep -Po '(?<=list=)([\w-]+)')
+  channel=$(yt videos --video_id $video_id --part snippet --key channelTitle)
+  [ -z "$playlist_id" ] || playlist=$(yt pl --playlist_id $playlist_id --key title --part snippet)
+  [ -z "$channel" ] && echo "Can't find the channel of $video_id" && exit
+  mkdir -p "$channel/$playlist"
+  pushd "$channel/$playlist"
+  touch downloaded
+  grep "$url" downloaded && popd && return
+  [ -z "$playlist_id" ] || echo $playlist_id > playlist_id
+  title=$(yt v --video_id $video_id --part snippet --keys title)
+  echo "$base_url?url=$url"
+  link=$(curl "$base_url?url=$url"|jq -r ".data.video_formats[]|select(.quality==$quality)|.url" |head -n 1)
+  wget "$link" -O "$title.mp4" && echo "https://www.youtube.com/watch?v=$video_id" >> downloaded
+  popd
+}
+
+#export -f fetch_video
+#export quality
+#export base_url
+#parallel -k -j 5 --retries 1 --lb fetch_video ::: $*
+
+for url in $*
+do
+  fetch_video $url
+done
