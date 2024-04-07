@@ -16,7 +16,11 @@ youtube = build('youtube', 'v3', developerKey=api_key)
 def exec(args, command, pageToken=None, depth=1, **kwargs):
     kwargs = {k:v for k,v in kwargs.items() if v is not None}
     sys.stderr.write("Load page {}\r".format(depth))
-    request = getattr(youtube, command)().list(part=args.part, pageToken=pageToken, maxResults=args.maxResults, **kwargs)
+    if pageToken:
+        kwargs.update({'pageToken': pageToken})
+    if 'maxResults' in args:
+        kwargs.update({'maxResults': args.maxResults})
+    request = getattr(youtube, command)().list(part=args.part, **kwargs)
     response = request.execute()
     result = extract(response, keys=args.keys)
     if 'nextPageToken' in response and response['pageInfo']['resultsPerPage'] * depth < args.maxResults:
@@ -42,6 +46,7 @@ videos = lambda args:exec(args, command='videos', id=args.video_id)
 playlists = lambda args:exec(args, command='playlists', channelId=args.channel_id, id=args.playlist_id)
 playlistitems = lambda args:exec(args, command='playlistItems', playlistId=args.playlist_id)
 search = lambda args:exec(args, command='search', q=args.query, type=args.type, channelId=args.channel_id)
+captions = lambda args:exec(args, command='captions', videoId=args.video_id)
 
 parser = argparse.ArgumentParser(description="YouTube command line tool")
 
@@ -86,10 +91,16 @@ videos_parser.add_argument('--keys', type=str, nargs="*",default=['id','publishe
 videos_parser.add_argument('--maxResults', type=int, help='How many results per page', default=50)
 videos_parser.set_defaults(func=videos)
 
+captions_parser = subparsers.add_parser('captions', aliases=['ca'], help='captions help')
+captions_parser.add_argument('--video_id', type=str, help='the ID of the videos to fetch')
+captions_parser.add_argument('--part', type=str, help='what to fetch(id,snippet)', default='id,snippet')
+captions_parser.add_argument('--keys', type=str, nargs="*",default=['videoId', 'language', 'name', 'isCC', 'trackKind', 'lastUpdated', 'status'], help='what field to show')
+captions_parser.set_defaults(func=captions)
+
 def add_share_argument(x):
     x.add_argument('--output', type=str, choices=['json', 'tsv'], default='tsv', help='the format of the output')
 
-list(map(add_share_argument, [search_parser, playlists_parser, playlistItems_parser, channels_parser, videos_parser]))
+list(map(add_share_argument, [search_parser, playlists_parser, playlistItems_parser, channels_parser, videos_parser, captions_parser]))
 
 
 if __name__ == "__main__":
