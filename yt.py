@@ -15,7 +15,7 @@ youtube = build('youtube', 'v3', developerKey=api_key)
 
 def exec(args, command, pageToken=None, depth=1, **kwargs):
     kwargs = {k:v for k,v in kwargs.items() if v is not None}
-    sys.stderr.write("Going through page {}\r".format(depth))
+    sys.stderr.write("Load page {}\r".format(depth))
     request = getattr(youtube, command)().list(part=args.part, pageToken=pageToken, maxResults=args.maxResults, **kwargs)
     response = request.execute()
     result = extract(response, keys=args.keys)
