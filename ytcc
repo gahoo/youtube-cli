@@ -1,0 +1,39 @@
+#!/bin/bash
+set -x
+
+fetch_video_cc(){
+  url=$1
+  video_id=$url
+  playlist=
+  channel=
+  playlist_id=
+  args=
+
+  echo $url|grep "^http" && video_id=$(echo $url|grep -Po '(?<=v=)([\w-]+)') && playlist_id=$(echo $url|grep -Po '(?<=list=)([\w-]+)')
+  channel=$(yt videos --video_id $video_id --part snippet --key channelTitle)
+  [ -z "$playlist_id" ] || playlist=$(yt pl --playlist_id $playlist_id --key title --part snippet)
+  [ -z "$channel" ] && echo "Can't find the channel of $video_id" && exit
+  mkdir -p "$channel/$playlist"
+  pushd "$channel/$playlist"
+  touch downloaded
+  grep "$url" downloaded && popd && return
+  [ -z "$playlist_id" ] || echo $playlist_id > playlist_id
+  [ -z "$lang" ] || args="$args --sub-langs $lang"
+  [ -z "$format" ] || args="$args --convert-subs $format"
+  [ "$format" == "txt" ] && args="$(echo $args|sed 's#txt#srt#g')"
+  sub_file=$(yt-dlp --write-subs $args --skip-download "https://www.youtube.com/watch?v=$video_id" | grep 'Writing video subtitles to'|cut -f2 -d:|sed 's#^ ##g')
+  [ -z "$sub_file" ] && popd && return
+  [ -z "$sub_file" ] || echo "https://www.youtube.com/watch?v=$video_id" >> downloaded
+  prefix=$(basename "$sub_file" .vtt)
+  [ "$format" = "txt" ] && awk 'BEGIN{RS="\n\n";FS="\n"}{printf "%s\n",$3}' "$prefix.srt" > "$prefix.txt" && rm "$prefix.srt"
+  popd
+}
+
+export -f fetch_video_cc
+export lang 
+export format
+parallel -k -j 5 --retries 1 --lb fetch_video_cc ::: $*
+#for item in $*
+#do
+#	fetch_video_cc $item
+#done
